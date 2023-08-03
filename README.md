@@ -59,8 +59,7 @@ This protocol is [TLV (type-length-value)](https://en.wikipedia.org/wiki/Type%E2
 - The client should acknowledge the numbers in the sequence. 
 - The server should expect it could receive an acknowledgement for the same sequence number multiple times.
 - The server assumes that messages are undelivered until it receives an Acknowledge for that messages sequence number.
-- The server should continue with the sequence of numbers. Once the sequence has completed, the server should use the remaining ticks to send the unacknowledged messages before
-  sending the Checksum to mark the end of transmission.
+- The server should continue with the sequence of numbers. Once the sequence has completed, the server should use the remaining ticks to send the unacknowledged messages.
 
 `Checksum`
 
@@ -79,10 +78,12 @@ This protocol is [TLV (type-length-value)](https://en.wikipedia.org/wiki/Type%E2
 - Checksum message indicates the end of the sequence, and carries a checksum value. 
 - The checksum is [....]
 - The client must acknowledge the checksum message. An acknowledgement of the checksum message indicates to the server that it's job is done. 
-- The server should not attempt to send the checksum message until it has received an acknowledgement for all numbers in the series.
 - If the server exhausts it's series of numbers, and is missing acknowledgements for some numbers in the series, it should use it's next server-ticks to resend those numbers.
 - If the server has received acknowledgements for all the numbers in the series, but is missing the acknowledgement for the checksum, the server should resend the checksum until the
   acknowledgement is received.
+- The client should assume that message can be delivered out of order. With this in mind, when receiving the checksum message (which marks the end of the stream), the client should
+  keep track of all the missing sequence numbers up to the sequence number of the checksum message. Receiving the checksum message marks the last most sequence number in the stream
+  of messages.
 
 ## Open questions
 
