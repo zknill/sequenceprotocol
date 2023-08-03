@@ -142,7 +142,7 @@ The server will repeat this process until all the messages in the series are ack
 When a client re-connects to the server, the server enters the 'resend' phase, working its way through all unacknowledged messages and sending them, continuing until all messages
 in the series are acknowledged.
 
-## Client
+## Client
 
 The client connects to the server passing a client-id and `n` numbers to receive in a series.
 The client should acknowledge the message it receives, it can send an acknowledgement at any time.
