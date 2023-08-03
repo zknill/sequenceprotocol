@@ -1,14 +1,78 @@
-## Requirements
+## Instructions to run
 
-- The connection can be dropped at any time, it should be possible to re-established the connection and complete the stream of numbers (from the current point in the sequence).
-- Server provides a series of `n` random numbers (uint32) to the client, `n` is specified by the client when it connects.
-- The client outputs the final checksum(s) and an indication of success or failure.
-- The server ticks every second, on each tick the server can send a message.
+#### Success case:
 
+1. Run the server
+   ```
+   go run ./cmd/server/ -port 8080 
+   ```
+
+2. In a different session/terminal window run the client
+   ```
+   go run ./cmd/client/ -port 8080 -n 10
+   ```
+
+3. You should see 10 numbers generated and passed from Server to Client. The checksum should also match.
+   Example:
+   ```
+    $ go run ./cmd/client/ -port 8080 -n 10                                         
+    2023/08/03 13:29:51 [0] number: 1051999831
+    2023/08/03 13:29:52 [1] number: 3899366106
+    2023/08/03 13:29:53 [2] number: 3514390649
+    2023/08/03 13:29:54 [3] number: 2776206725
+    2023/08/03 13:29:55 [4] number: 664399516
+    2023/08/03 13:29:56 [5] number: 53824273
+    2023/08/03 13:29:57 [6] number: 268394589
+    2023/08/03 13:29:58 [7] number: 2032633658
+    2023/08/03 13:29:59 [8] number: 2840642574
+    2023/08/03 13:30:00 [9] number: 78856040
+    2023/08/03 13:30:01 [10] checksum: 8d52dbc1b279ea97fb6a5854f0b5512db1280357
+    2023/08/03 13:30:01 [OK] checksum match
+    2023/08/03 13:30:01 8d52dbc1b279ea97fb6a5854f0b5512db1280357 = 8d52dbc1b279ea97fb6a5854f0b5512db1280357
+   ```
+
+#### Resume: 
+
+1. Run the server as before
+
+2. Run the client with a static id, but Ctrl-C the client half way through the number generation.
+   ```
+    $ go run ./cmd/client/ -port 8080 -n 10 -id=my-client-id-abc
+   ```
+
+3. Half way through the number generation, Ctrl-C the client. 
+   ```
+   2023/08/03 13:26:59 [0] number: 2089351891
+   2023/08/03 13:27:00 [1] number: 1856068399
+   2023/08/03 13:27:01 [2] number: 976166314
+   2023/08/03 13:27:02 [3] number: 3012547545
+   ^C
+   2023/08/03 13:27:02 exiting
+   ```
+
+4. Resume the client with the same id.
+   ```
+    $ go run ./cmd/client/ -port 8080 -n 10 -id=my-client-id-abc
+    2023/08/03 13:27:04 resumed data from store, series: [2089351891 1856068399 976166314 3012547545 0 0 0 0 0 0]
+    2023/08/03 13:27:04 [5] number: 4109345573
+    2023/08/03 13:27:05 [6] number: 3038305399
+    2023/08/03 13:27:06 [7] number: 2740718436
+    2023/08/03 13:27:07 [8] number: 330912612
+    2023/08/03 13:27:08 [9] number: 2276818533
+    2023/08/03 13:27:09 [4] number: 1899243751
+    2023/08/03 13:27:09 [10] checksum: 08bce3a368f6a8e706c05df4dbb8e0644bf658b5
+    2023/08/03 13:27:09 [OK] checksum match
+    2023/08/03 13:27:09 08bce3a368f6a8e706c05df4dbb8e0644bf658b5 = 08bce3a368f6a8e706c05df4dbb8e0644bf658b5
+   ```
+   Depending on the timing of the Ctrl-C, you will likely also see the messages appearing in the wrong order. See message `[4]` in the above example.
+
+   The client flushes the data to a file on exit. The file is `/tmp/{client-id}.state`. You can artificially force the checksum mismatch by editing this file before resuming the client. The server only keeps its state in memory.
 
 ## Message format
 
 This protocol is [TLV (type-length-value)](https://en.wikipedia.org/wiki/Type%E2%80%93length%E2%80%93value) encoded data stream in binary format.
+
+All numbers are BigEndian encoded.
 
 `Connect`
 
@@ -37,10 +101,7 @@ This protocol is [TLV (type-length-value)](https://en.wikipedia.org/wiki/Type%E2
         Sequence number of this number in the series
 
     `Int32`
-       Length of the number in bytes, not including self
-
-    `ByteN`
-       The payload, L length long, where L is specified by the previous length field. This encodes the number as BigEndian
+       The payload number.
 
 - Number is a single number in the sequence. The Number message contains both the number field, and a sequence number.
 - The sequence number is incrementing for each number in the sequence. First message 1, second message 2, etc.
@@ -77,8 +138,8 @@ This protocol is [TLV (type-length-value)](https://en.wikipedia.org/wiki/Type%E2
 
 - Checksum message indicates the end of the sequence, and carries a checksum value.
 - The checksum is [....]
-- The client must acknowledge the checksum message. An acknowledgement of the checksum message indicates to the server that it's job is done.
-- If the server exhausts it's series of numbers, and is missing acknowledgements for some numbers in the series, it should use it's next server-ticks to resend those numbers.
+- The client must acknowledge the checksum message. An acknowledgement of the checksum message indicates to the server that its job is done.
+- If the server exhausts its series of numbers, and is missing acknowledgements for some numbers in the series, it should use its next server-ticks to resend those numbers.
 - If the server has received acknowledgements for all the numbers in the series, but is missing the acknowledgement for the checksum, the server should resend the checksum until the
   acknowledgement is received.
 - The client should assume that message can be delivered out of order. With this in mind, when receiving the checksum message (which marks the end of the stream), the client should
