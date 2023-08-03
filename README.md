@@ -217,6 +217,11 @@ The only automated / unit tests that are included in this project (so far) are f
 definitions, so I've tested that encoding a message to bytes, and decoding it back into a struct works as expected. This ensures the client and server will understand each others'
 messages. 
 
+You can run the tests that do exist with: 
+```
+go test ./...
+```
+
 ## Further improvements
 
 - There's some missing error handling
