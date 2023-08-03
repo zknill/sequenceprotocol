@@ -1,7 +1,7 @@
 ## Requirements
 
 - The connection can be dropped at any time, it should be possible to re-established the connection and complete the stream of numbers (from the current point in the sequence).
-- Server provides a series of `n` random numbers (uint32) to the client, `n` is specified by the client when it connects. 
+- Server provides a series of `n` random numbers (uint32) to the client, `n` is specified by the client when it connects.
 - The client outputs the final checksum(s) and an indication of success or failure.
 - The server ticks every second, on each tick the server can send a message.
 
@@ -24,9 +24,9 @@ This protocol is [TLV (type-length-value)](https://en.wikipedia.org/wiki/Type%E2
     `String`
         Client ID
 
-- Connect can be used to both initialise a new connection, and to resume a dropped connection. 
-- The connect message contains the `n` number of numbers to receive in sequence, and the client id. 
-- If the client id is unknown to the server, it's a new connection, if the client id is known to the server then the sequence should be resumed from the last acknowledged message. 
+- Connect can be used to both initialise a new connection, and to resume a dropped connection.
+- The connect message contains the `n` number of numbers to receive in sequence, and the client id.
+- If the client id is unknown to the server, it's a new connection, if the client id is known to the server then the sequence should be resumed from the last acknowledged message.
 
 `Number`
 
@@ -42,8 +42,8 @@ This protocol is [TLV (type-length-value)](https://en.wikipedia.org/wiki/Type%E2
     `ByteN`
        The payload, L length long, where L is specified by the previous length field. This encodes the number as BigEndian
 
-- Number is a single number in the sequence. The Number message contains both the number field, and a sequence number. 
-- The sequence number is incrementing for each number in the sequence. First message 1, second message 2, etc. 
+- Number is a single number in the sequence. The Number message contains both the number field, and a sequence number.
+- The sequence number is incrementing for each number in the sequence. First message 1, second message 2, etc.
 - The client should expect it could receive the same number in the sequence multiple times.
 
 `Acknowledge`
@@ -55,8 +55,8 @@ This protocol is [TLV (type-length-value)](https://en.wikipedia.org/wiki/Type%E2
         Sequence number to acknowledge
 
 - Acknowledge message acknowledges an element in the series of numbers.
-- The server **must not** wait for an acknowledgement on the previous message before sending the next message. 
-- The client should acknowledge the numbers in the sequence. 
+- The server **must not** wait for an acknowledgement on the previous message before sending the next message.
+- The client should acknowledge the numbers in the sequence.
 - The server should expect it could receive an acknowledgement for the same sequence number multiple times.
 - The server assumes that messages are undelivered until it receives an Acknowledge for that messages sequence number.
 - The server should continue with the sequence of numbers. Once the sequence has completed, the server should use the remaining ticks to send the unacknowledged messages.
@@ -75,9 +75,9 @@ This protocol is [TLV (type-length-value)](https://en.wikipedia.org/wiki/Type%E2
     `String`
         Checksum data
 
-- Checksum message indicates the end of the sequence, and carries a checksum value. 
+- Checksum message indicates the end of the sequence, and carries a checksum value.
 - The checksum is [....]
-- The client must acknowledge the checksum message. An acknowledgement of the checksum message indicates to the server that it's job is done. 
+- The client must acknowledge the checksum message. An acknowledgement of the checksum message indicates to the server that it's job is done.
 - If the server exhausts it's series of numbers, and is missing acknowledgements for some numbers in the series, it should use it's next server-ticks to resend those numbers.
 - If the server has received acknowledgements for all the numbers in the series, but is missing the acknowledgement for the checksum, the server should resend the checksum until the
   acknowledgement is received.
@@ -87,7 +87,7 @@ This protocol is [TLV (type-length-value)](https://en.wikipedia.org/wiki/Type%E2
 
 ## Open questions
 
-- One of the requirements reads: 
+- One of the requirements reads:
 
   _"The timing of the messages should be under control of the server (that is: information may be sent by the client as part of initiating a
   connection, but there is no per-message client request)."_
@@ -98,19 +98,19 @@ This protocol is [TLV (type-length-value)](https://en.wikipedia.org/wiki/Type%E2
   the `Acknowledge` message type, and add a new message type for `Missing`
 
     `Missing`
-    
+
         `Byte3('MIS')`
             Identifies the message as Missing
-    
+
         `Int32`
             The number of int32 sequence numbers carried in this message
-    
+
         `Int32...`
             Repeated Int32 sequence numbers that are missing. There are N of these numbers, where N is specified by the previous field.
 
   Using this missing message, the client can indicate to the server which sequence numbers are missing.
-  If the client has not received any message in 2 seconds, then it can send a `Missing` message to the server. 
-  Sequence numbers increase by exactly 1 each time. So the client can tell if there's a missing sequence number in the middle of the series. 
+  If the client has not received any message in 2 seconds, then it can send a `Missing` message to the server.
+  Sequence numbers increase by exactly 1 each time. So the client can tell if there's a missing sequence number in the middle of the series.
 
   The `Checksum` message marks the end of the series. If the client has received a checksum message then it knows the end of the sequence numbers and can find the missing sequence
   numbers. If the client has not received a checksum message, then it can find the missing sequence numbers that it already knows about AND it can include the highest sequence
@@ -119,7 +119,7 @@ This protocol is [TLV (type-length-value)](https://en.wikipedia.org/wiki/Type%E2
   messages are missing. If the client sends a `Missing` message, and does not receive any messages in return, after 2 seconds, the client should resend the `Missing` message.
 
   Using this pattern, the server can assume that all messages are successfully delivered. On receiving a `Missing` message, the server can mark individual messages as undelivered,
-  and send those again on each server tick. 
+  and send those again on each server tick.
 
   Notes:
   - I've tried to comply with the spirit of the task, but because of the added wait time on the `Missing` message, I've opted to use per-message acknowledgements instead of
@@ -128,11 +128,11 @@ This protocol is [TLV (type-length-value)](https://en.wikipedia.org/wiki/Type%E2
     that we _have_ received. This would remove the worst-case wait time. The underlying assumption is that the connection is mostly-stable and mostly-reliable. That is, messages
     are more likely to be delivered than not delivered. With this assumption, we send less data marking the messages that are missing than we do marking the messages that are
     received. For a 1 in 100 failure rate on the connection, we would have to ack 99 messages in this multi acknowledgement message, or mark just 1 message as missing in the
-    missing message. 
+    missing message.
 
 ## Server
 
-The server has a list of message that it needs to send, it will work its way though that list from start to finish. 
+The server has a list of message that it needs to send, it will work its way though that list from start to finish.
 In the background, on the same connection, the server receives acknowledge messages. It uses these acknowledgements to mark which messages have been successfully received by the
 client. This is the 'initial send' phase.
 
