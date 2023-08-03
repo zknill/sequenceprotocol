@@ -210,3 +210,9 @@ The client connects to the server passing a client-id and `n` numbers to receive
 The client should acknowledge the message it receives, it can send an acknowledgement at any time.
 
 When the client has received all the numbers in the series, and a checksum, compute the checksum on the messages received and exit, printing the status.
+
+## Tests
+
+The only automated / unit tests that are included in this project (so far) are for the message encoding / decoding. The client and server share the same message structure
+definitions, so I've tested that encoding a message to bytes, and decoding it back into a struct works as expected. This ensures the client and server will understand each others'
+messages. 
