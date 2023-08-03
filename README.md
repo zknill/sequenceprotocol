@@ -4,7 +4,7 @@
 
 1. Run the server
    ```
-   go run ./cmd/server/ -port 8080 
+   go run ./cmd/server/ -port 8080
    ```
 
 2. In a different session/terminal window run the client
@@ -15,7 +15,7 @@
 3. You should see 10 numbers generated and passed from Server to Client. The checksum should also match.
    Example:
    ```
-    $ go run ./cmd/client/ -port 8080 -n 10                                         
+    $ go run ./cmd/client/ -port 8080 -n 10
     2023/08/03 13:29:51 [0] number: 1051999831
     2023/08/03 13:29:52 [1] number: 3899366106
     2023/08/03 13:29:53 [2] number: 3514390649
@@ -31,17 +31,13 @@
     2023/08/03 13:30:01 8d52dbc1b279ea97fb6a5854f0b5512db1280357 = 8d52dbc1b279ea97fb6a5854f0b5512db1280357
    ```
 
-#### Resume: 
+#### Resume:
 
 1. Run the server as before
 
 2. Run the client with a static id, but Ctrl-C the client half way through the number generation.
    ```
     $ go run ./cmd/client/ -port 8080 -n 10 -id=my-client-id-abc
-   ```
-
-3. Half way through the number generation, Ctrl-C the client. 
-   ```
    2023/08/03 13:26:59 [0] number: 2089351891
    2023/08/03 13:27:00 [1] number: 1856068399
    2023/08/03 13:27:01 [2] number: 976166314
@@ -50,7 +46,7 @@
    2023/08/03 13:27:02 exiting
    ```
 
-4. Resume the client with the same id.
+3. Resume the client with the same id.
    ```
     $ go run ./cmd/client/ -port 8080 -n 10 -id=my-client-id-abc
     2023/08/03 13:27:04 resumed data from store, series: [2089351891 1856068399 976166314 3012547545 0 0 0 0 0 0]
@@ -173,9 +169,14 @@ All numbers are BigEndian encoded.
   If the client has not received any message in 2 seconds, then it can send a `Missing` message to the server.
   Sequence numbers increase by exactly 1 each time. So the client can tell if there's a missing sequence number in the middle of the series.
 
-  The `Checksum` message marks the end of the series. If the client has received a checksum message then it knows the end of the sequence numbers and can find the missing sequence
-  numbers. If the client has not received a checksum message, then it can find the missing sequence numbers that it already knows about AND it can include the highest sequence
-  number +1. This is safe because the client knows that it must receive at least one more message, up until the checksum message is received. The draw back here is that for `S`
+  The `Checksum` message marks the end of the series.
+  - If the client has received a checksum message then it knows the end of the sequence numbers and can find the missing sequence
+  numbers.
+
+  - If the client has not received a checksum message, then it can find the missing sequence numbers that it already knows about AND it can include the highest sequence
+  number +1.
+
+  This is safe because the client knows that it must receive at least one more message, up until the checksum message is received. The draw back here is that for `S`
   missing messages, the client will have to wait at least `S * [wait time]`, where the wait time is currently 2 seconds in order to indicate one by one to the server that
   messages are missing. If the client sends a `Missing` message, and does not receive any messages in return, after 2 seconds, the client should resend the `Missing` message.
 
