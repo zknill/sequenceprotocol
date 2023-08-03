@@ -216,3 +216,9 @@ When the client has received all the numbers in the series, and a checksum, comp
 The only automated / unit tests that are included in this project (so far) are for the message encoding / decoding. The client and server share the same message structure
 definitions, so I've tested that encoding a message to bytes, and decoding it back into a struct works as expected. This ensures the client and server will understand each others'
 messages. 
+
+## Further improvements
+
+- There's some missing error handling
+- The server expects only 1 connection at once for each client id. The second connection will overwrite the first's `net.Conn` object, but not stop the previous writer to that conn. 
+- Tests for the client and server packages (with dependency injection for the client's store).
