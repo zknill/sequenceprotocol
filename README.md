@@ -129,3 +129,22 @@ This protocol is [TLV (type-length-value)](https://en.wikipedia.org/wiki/Type%E2
     are more likely to be delivered than not delivered. With this assumption, we send less data marking the messages that are missing than we do marking the messages that are
     received. For a 1 in 100 failure rate on the connection, we would have to ack 99 messages in this multi acknowledgement message, or mark just 1 message as missing in the
     missing message. 
+
+## Server
+
+The server has a list of message that it needs to send, it will work its way though that list from start to finish. 
+In the background, on the same connection, the server receives acknowledge messages. It uses these acknowledgements to mark which messages have been successfully received by the
+client. This is the 'initial send' phase.
+
+Once the server has completed the first send on all the messages in the series, it revisits the series in order, re-sending each message that is not marked as acknowledged.
+The server will repeat this process until all the messages in the series are acknowledged. This is the 'resend' phase.
+
+When a client re-connects to the server, the server enters the 'resend' phase, working its way through all unacknowledged messages and sending them, continuing until all messages
+in the series are acknowledged.
+
+## Client
+
+The client connects to the server passing a client-id and `n` numbers to receive in a series.
+The client should acknowledge the message it receives, it can send an acknowledgement at any time.
+
+When the client has received all the numbers in the series, and a checksum, compute the checksum on the messages received and exit, printing the status.
